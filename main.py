@@ -1,11 +1,12 @@
 #PyQt5 GUI
 
+import requests
 import sys
 from unittest import case
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
                              QRadioButton, QLineEdit, QPushButton, QStatusBar)
-from PyQt5.QtGui import QIcon, QFont, QPixmap
+from PyQt5.QtGui import QIcon, QFont, QPixmap, QImage
 from PyQt5.QtCore import Qt
 import api
 from api import get_digimon_info
@@ -18,6 +19,9 @@ class MainWindow(QMainWindow):
         # setGeometry(x, y, width, height)
         self.setGeometry(700, 120, 600, 800)
         self.setWindowIcon(QIcon("digimon.jpg"))
+
+        #image
+        self.label_picture = QLabel(self)
 
         # input box
         self.line_edit = QLineEdit(self)
@@ -51,24 +55,23 @@ class MainWindow(QMainWindow):
         #label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
 
         # image
-        label_picture = QLabel(self)
-        label_picture.setGeometry(0, 0, 300, 200)
+        self.label_picture.setGeometry(0, 0, 300, 200)
 
         pixmap = QPixmap("digimon.jpg")
-        label_picture.setPixmap(pixmap)
+        self.label_picture.setPixmap(pixmap)
 
-        label_picture.setScaledContents(True)
-        label_picture.setGeometry((self.width() - label_picture.width()) // 2, 70, label_picture.width(),
-                                       label_picture.height())
+        self.label_picture.setScaledContents(True)
+        self.label_picture.setGeometry((self.width() - self.label_picture.width()) // 2, 70, self.label_picture.width(),
+                                       self.label_picture.height())
         #label_picture.setAlignment(Qt.AlignCenter)
 
 
         # input box
-        self.line_edit.setGeometry(label_picture.x(), label_picture.y() + 250, 200, 50)
+        self.line_edit.setGeometry(self.label_picture.x(), self.label_picture.y() + 250, 200, 50)
         self.line_edit.setStyleSheet("font-size: 20px;")
         self.line_edit.setPlaceholderText("Enter the Digimon")
         # submit button
-        self.submit_button.setGeometry(self.line_edit.x() + 200, label_picture.y() + 250, 100, 50)
+        self.submit_button.setGeometry(self.line_edit.x() + 200, self.label_picture.y() + 250, 100, 50)
         self.submit_button.setStyleSheet("font-size: 20px;")
 
         self.submit_button.clicked.connect(self.submit)
@@ -77,11 +80,11 @@ class MainWindow(QMainWindow):
         #stats label
         self.stats_label.setGeometry(50, self.button_fields.y() + 550, 400, 200)
         #warning label
-        self.warning_label.setGeometry(label_picture.x(), self.line_edit.y() - 50, 350, 50)
+        self.warning_label.setGeometry(self.label_picture.x(), self.line_edit.y() - 50, 350, 50)
         self.warning_label.setStyleSheet("font-size: 20px; color: red;")
 
         #radio buttons
-        self.button_level.setGeometry(label_picture.x(), label_picture.y() + 300, 100, 50)
+        self.button_level.setGeometry(self.label_picture.x(), self.label_picture.y() + 300, 100, 50)
         self.button_attribute.setGeometry(self.button_level.x() + 100, self.button_level.y(), 100, 50)
         self.button_type.setGeometry(self.button_attribute.x() + 100, self.button_attribute.y(), 100, 50)
 
@@ -133,6 +136,8 @@ class MainWindow(QMainWindow):
     def submit(self):
         self.stats_label.setText("")
         digimon = self.line_edit.text()
+        self.get_digimon_image(get_digimon_info(digimon))
+
         if self.button_level.isChecked():
             self.get_digimon(digimon, self.button_level)
         elif self.button_attribute.isChecked():
@@ -162,6 +167,7 @@ class MainWindow(QMainWindow):
         if digimon:
             digimon_info = get_digimon_info(digimon)
             if digimon_info:
+
                 match radio_button:
                     case self.button_level:
                         text = "Levels:\n"
@@ -204,10 +210,25 @@ class MainWindow(QMainWindow):
                         self.stats_label.setText(text)
                     case _:
                         pass
+
             else:
                 self.warning_label.setText("Please write a valid digimon!")
         else:
             self.warning_label.setText("Please write the name of a digimon!")
+
+    def get_digimon_image(self, digimon_info):
+        if digimon_info:
+            url_image = digimon_info["images"][0]["href"]
+            image = QImage()
+            image.loadFromData(requests.get(url_image).content)
+
+            self.label_picture.setPixmap(QPixmap(image))
+            self.label_picture.show()
+
+            self.label_picture.setScaledContents(True)
+            self.label_picture.setGeometry((self.width() - self.label_picture.width()) // 2, 70,
+                                           self.label_picture.width(),
+                                           self.label_picture.height())
 
 
 def main():
